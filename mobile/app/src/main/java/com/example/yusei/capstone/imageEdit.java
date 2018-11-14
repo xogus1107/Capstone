@@ -8,6 +8,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.RelativeLayout.LayoutParams;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 import android.widget.Toast;
@@ -24,6 +25,7 @@ import com.google.android.gms.vision.face.FaceDetector;
 
 public class imageEdit extends AppCompatActivity {
     private ImageView editview;
+    private ImageView cropview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,11 +35,14 @@ public class imageEdit extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         editview = (ImageView) findViewById(R.id.picture);
+        cropview = (ImageView) findViewById(R.id.crop);
 
         Paint myRectPaint = new Paint();
         myRectPaint.setStrokeWidth(5);
         myRectPaint.setColor(Color.RED);
         myRectPaint.setStyle(Paint.Style.STROKE);
+
+        Bitmap resultBmp = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
 
         Bitmap tempBitmap = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
         Canvas tempCanvas = new Canvas(tempBitmap);
@@ -63,10 +68,17 @@ public class imageEdit extends AppCompatActivity {
             for(int i=0; i<faces.size(); i++) {
                 Face thisFace = faces.valueAt(i);
                 float x1 = thisFace.getPosition().x;
-                float y1 = thisFace.getPosition().y;
+                float y1 = thisFace.getPosition().y + thisFace.getHeight() - thisFace.getWidth();;
                 float x2 = x1 + thisFace.getWidth();
-                float y2 = y1 + thisFace.getHeight();
+                float y2 = y1 + thisFace.getWidth();
                 tempCanvas.drawRoundRect(new RectF(x1, y1, x2, y2), 2, 2, myRectPaint);
+                int length = (int)thisFace.getWidth();
+
+                // 얼굴 크로핑 후 128픽셀로 변환
+                Bitmap cropBitmap = Bitmap.createBitmap(MainActivity.editimage, (int)x1, (int)y1, length, length);
+
+
+                cropview.setImageDrawable(new BitmapDrawable(getResources(),cropBitmap));
             }
         }
         editview.setImageDrawable(new BitmapDrawable(getResources(),tempBitmap));
