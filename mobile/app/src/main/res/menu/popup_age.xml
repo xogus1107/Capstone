@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/baby"
+        android:enabled="true"
+        android:title="유아" />
+    <item
+        android:id="@+id/teen"
+        android:enabled="true"
+        android:title="10대">
+    </item>
+    <item
+        android:id="@+id/twenty"
+        android:enabled="true"
+        android:title="20대">
+    </item>
+    <item
+        android:id="@+id/thirty"
+        android:enabled="true"
+        android:title="30대">
+    </item>
+    <item
+        android:id="@+id/fourty"
+        android:enabled="true"
+        android:title="40대">
+    </item>
+    <item
+    android:id="@+id/fifty"
+    android:enabled="true"
+    android:title="50대">
+</item>
+    <item
+        android:id="@+id/sixty"
+        android:enabled="true"
+        android:title="60대">
+    </item>
+    <item
+        android:id="@+id/over_seventy"
+        android:enabled="true"
+        android:title="70대이상">
+    </item>
+</menu>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/happy"
+        android:enabled="true"
+        android:title="행복" />
+    <item
+        android:id="@+id/angry"
+        android:enabled="true"
+        android:title="분노">
+    </item>
+    <item
+        android:id="@+id/sad"
+        android:enabled="true"
+        android:title="슬픔">
+    </item>
+    <item
+        android:id="@+id/surprise"
+        android:enabled="true"
+        android:title="놀람">
+    </item>
+    <item
+        android:id="@+id/fear"
+        android:enabled="true"
+        android:title="공포">
+    </item>
+</menu>
