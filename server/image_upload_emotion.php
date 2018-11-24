@@ -12,8 +12,7 @@ $extension = end($temp);
 // uploads디렉토리에 파일을 업로드합니다.
 $uploaddir = './upload/image/';
 $uploadfile = $uploaddir . basename($name);
-echo '<pre>';
-if($_POST['MAX_FILE_SIZE'] < $size){
+if(100000 < $size){
      echo "업로드 파일이 지정된 파일크기보다 큽니다.\n";
 } else {
     if(($error > 0) || ($size <= 0) || ($extension != $allowedExts[0] && $extension != $allowedExts[1] &&$extension != $allowedExts[2] &&$extension != $allowedExts[3])){
@@ -25,13 +24,15 @@ if($_POST['MAX_FILE_SIZE'] < $size){
          } else {
                // move_uploaded_file은 임시 저장되어 있는 파일을 ./uploads 디렉토리로 이동합니다.
                if (move_uploaded_file($tmp_name, $uploadfile)) {
-                    echo "성공적으로 업로드 되었습니다.\n";
+                    //echo "성공적으로 업로드 되었습니다.\n";
                     $python = 'C:\Users\lkjim\Anaconda3\envs\cuda\python.exe';
                     $pyscript = 'C:\Apache24\htdocs\stargan\emotion_test.py';
                     $cmd = "$python $pyscript";
                     exec($cmd);
-                    echo "<img src='stargan\\emotion\\results\\1-images.jpg' alt='result' />\n";
-                    echo "      original             Anger              Contempt           Disgust               Fear            Happiness             Neutral             Sadness           Surprise\n";
+                    $imagedata = file_get_contents('stargan\\age\\results\\1-images.jpg');
+                    echo base64_encode($imagedata);
+                    //echo "<img src='stargan\\emotion\\results\\1-images.jpg' alt='result' />\n";
+                    //echo "      original             Anger              Contempt           Disgust               Fear            Happiness             Neutral             Sadness           Surprise\n";
                     unlink($uploadfile);
 
                } else {
