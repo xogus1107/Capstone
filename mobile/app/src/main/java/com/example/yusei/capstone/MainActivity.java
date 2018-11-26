@@ -1,6 +1,7 @@
 package com.example.yusei.capstone;
 
 import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,7 +28,7 @@ import java.io.IOException;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
-    public String photoFileName = "photo.jpg";
+    public String photoFileName = "photo.png";
     public final String APP_TAG = "Capstone";
     File photoFile;
     private Button button_gallery;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         button_gallery = (Button) findViewById(R.id.gallery);
         button_camera = (Button) findViewById(R.id.camera);
         imageview = (ImageView) findViewById(R.id.picture);
+
 
         // 갤러리 버튼 클릭 시
         button_gallery.setOnClickListener(new View.OnClickListener() {
@@ -121,7 +123,21 @@ public class MainActivity extends AppCompatActivity {
         } else if (requestCode == CAMERA) {
             // by this point we have the camera photo on disk
             editimage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+
+            // 카메라 EXIF 메타데이터 저장
+            ExifInterface exif = null;
+            try {
+                exif = new ExifInterface(photoFile.getAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED);
+
+            editimage = rotateBitmap(editimage, orientation);
+            /*
             editimage = RotateBitmap(editimage, 270);
+            */
             saveImage(editimage);
             Toast.makeText(MainActivity.this, "Image Saved!", Toast.LENGTH_SHORT).show();
             // 이미지 편집 액티비티 호출
@@ -132,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
     public String saveImage(Bitmap myBitmap) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        myBitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        myBitmap.compress(Bitmap.CompressFormat.PNG, 100, bytes);
         File wallpaperDirectory = new File(
                 Environment.getExternalStorageDirectory() + IMAGE_DIRECTORY);
         // have the object build the directory structure, if needed.
@@ -141,13 +157,13 @@ public class MainActivity extends AppCompatActivity {
         }
         try {
             File f = new File(wallpaperDirectory, Calendar.getInstance()
-                    .getTimeInMillis() + ".jpg");
+                    .getTimeInMillis() + ".png");
             f.createNewFile();
             FileOutputStream fo = new FileOutputStream(f);
             fo.write(bytes.toByteArray());
             MediaScannerConnection.scanFile(this,
                     new String[]{f.getPath()},
-                    new String[]{"image/jpeg"}, null);
+                    new String[]{"image/png"}, null);
             fo.close();
             Log.d("TAG", "File Saved::--->" + f.getAbsolutePath());
 
@@ -162,6 +178,49 @@ public class MainActivity extends AppCompatActivity {
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+    public static Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_NORMAL:
+                return bitmap;
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                matrix.setScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.setRotate(180);
+                break;
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                matrix.setRotate(180);
+                matrix.postScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_TRANSPOSE:
+                matrix.setRotate(90);
+                matrix.postScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.setRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_TRANSVERSE:
+                matrix.setRotate(-90);
+                matrix.postScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                matrix.setRotate(-90);
+                break;
+            default:
+                return bitmap;
+        }
+        try {
+            Bitmap bmRotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+            bitmap.recycle();
+            return bmRotated;
+        }
+        catch (OutOfMemoryError e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // 툴바에 뒤로가기 버튼 구현
