@@ -1,31 +1,50 @@
 package com.example.yusei.capstone;
 
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.RelativeLayout.LayoutParams;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 import android.widget.Toast;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.SparseArray;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class imageEdit extends AppCompatActivity {
     private ImageView editview;
-    private ImageView cropview;
+    private Bitmap decodedByte;
+    private Bitmap decodedByte2;
+    private float x1;
+    private float y1;
+    private int length;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,16 +54,8 @@ public class imageEdit extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         editview = (ImageView) findViewById(R.id.picture);
-        cropview = (ImageView) findViewById(R.id.crop);
 
-        Paint myRectPaint = new Paint();
-        myRectPaint.setStrokeWidth(5);
-        myRectPaint.setColor(Color.RED);
-        myRectPaint.setStyle(Paint.Style.STROKE);
-
-        Bitmap resultBmp = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
-
-        Bitmap tempBitmap = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
+        final Bitmap tempBitmap = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
         Canvas tempCanvas = new Canvas(tempBitmap);
         tempCanvas.drawBitmap(MainActivity.editimage, 0, 0, null);
 
@@ -67,22 +78,23 @@ public class imageEdit extends AppCompatActivity {
         {
             for(int i=0; i<faces.size(); i++) {
                 Face thisFace = faces.valueAt(i);
-                float x1 = thisFace.getPosition().x;
-                float y1 = thisFace.getPosition().y + thisFace.getHeight() - thisFace.getWidth();;
-                float x2 = x1 + thisFace.getWidth();
-                float y2 = y1 + thisFace.getWidth();
-                tempCanvas.drawRoundRect(new RectF(x1, y1, x2, y2), 2, 2, myRectPaint);
-                int length = (int)thisFace.getWidth();
+                x1 = thisFace.getPosition().x + (float) 0.12*thisFace.getWidth();
+                y1 = thisFace.getPosition().y + thisFace.getHeight() - (float)0.76*thisFace.getWidth();
+                float x2 = x1 + (float)0.76*thisFace.getWidth();
+                float y2 = y1 + (float)0.76*thisFace.getWidth();
+                length = (int)(0.76*thisFace.getWidth());
 
                 // 얼굴 크로핑 후 128픽셀로 변환
-                Bitmap cropBitmap = Bitmap.createBitmap(MainActivity.editimage, (int)x1, (int)y1, length, length);
+                Bitmap cropFace = Bitmap.createBitmap(MainActivity.editimage, (int)x1, (int)y1, length, length);
+                cropFace = createScaledBitmap(cropFace, 128, 128);
+                // 크로핑한 얼굴 서버에 업로드
+                uploadPhoto(cropFace);
+                // 비트맵 할당 해제
+                cropFace.recycle();
+                editview.setImageDrawable(new BitmapDrawable(getResources(),decodedByte));
 
-
-                cropview.setImageDrawable(new BitmapDrawable(getResources(),cropBitmap));
             }
         }
-        editview.setImageDrawable(new BitmapDrawable(getResources(),tempBitmap));
-
         BottomNavigationView bottomNavigationView =
                 (BottomNavigationView) findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.bottom_navigation);
@@ -97,6 +109,8 @@ public class imageEdit extends AppCompatActivity {
                 switch (item.getItemId()) {
                     case R.id.action_original:          // 원본 버튼 클릭 시
                         Toast.makeText(imageEdit.this, item.getTitle(), Toast.LENGTH_SHORT).show();
+                        // 이미지 뷰에 원본 이미지 설정
+                        editview.setImageDrawable(new BitmapDrawable(getResources(),tempBitmap));
                         break;
                     case R.id.action_age:               // 나이 버튼 클릭 시
                         PopupMenu popup1 = new PopupMenu(imageEdit.this, findViewById(R.id.action_age));
@@ -108,20 +122,34 @@ public class imageEdit extends AppCompatActivity {
                                 Toast.makeText(getBaseContext(), item.getTitle(), Toast.LENGTH_SHORT).show();
                                 switch (item.getItemId()) {
                                     case R.id.baby:
+                                        age_option(128);
                                         return true;
-                                    case R.id.teen:
+                                    case R.id.child:
+                                        age_option(256);
+                                        return true;
+                                    case R.id.early_teen:
+                                        age_option(384);
+                                        return true;
+                                    case R.id.late_teen:
+                                        age_option(512);
                                         return true;
                                     case R.id.twenty:
+                                        age_option(640);
                                         return true;
                                     case R.id.thirty:
+                                        age_option(768);
                                         return true;
                                     case R.id.fourty:
+                                        age_option(896);
                                         return true;
                                     case R.id.fifty:
+                                        age_option(1024);
                                         return true;
                                     case R.id.sixty:
+                                        age_option(1152);
                                         return true;
                                     case R.id.over_seventy:
+                                        age_option(1280);
                                         return true;
                                     default:
                                         return false;
@@ -139,15 +167,29 @@ public class imageEdit extends AppCompatActivity {
                             public boolean onMenuItemClick(MenuItem item) {
                                 Toast.makeText(getBaseContext(), item.getTitle(), Toast.LENGTH_SHORT).show();
                                 switch (item.getItemId()) {
-                                    case R.id.happy:
-                                        return true;
                                     case R.id.angry:
+                                        emotion_option(128);
                                         return true;
-                                    case R.id.sad:
+                                    case R.id.contempt:
+                                        emotion_option(256);
                                         return true;
-                                    case R.id.surprise:
+                                    case R.id.disgust:
+                                        emotion_option(384);
                                         return true;
                                     case R.id.fear:
+                                        emotion_option(512);
+                                        return true;
+                                    case R.id.happy:
+                                        emotion_option(640);
+                                        return true;
+                                    case R.id.neutral:
+                                        emotion_option(768);
+                                        return true;
+                                    case R.id.sad:
+                                        emotion_option(896);
+                                        return true;
+                                    case R.id.surprise:
+                                        emotion_option(1024);
                                         return true;
                                     default:
                                         return false;
@@ -184,4 +226,122 @@ public class imageEdit extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    public void age_option(int index){
+        Bitmap cropBitmap = Bitmap.createBitmap(decodedByte, index, 0, 128, 128);
+        Bitmap resultBmp = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
+        cropBitmap = createScaledBitmap(cropBitmap, length,  length);
+        Canvas canvas = new Canvas(resultBmp);
+        canvas.drawBitmap(MainActivity.editimage, 0, 0, null);
+        canvas.drawBitmap(cropBitmap, x1, y1, null);
+        editview.setImageDrawable(new BitmapDrawable(getResources(),resultBmp));
+        cropBitmap.recycle();
+    }
+
+    public void emotion_option(int index){
+        Bitmap cropBitmap = Bitmap.createBitmap(decodedByte2, index + 2, 2, 124, 124);
+        Bitmap resultBmp = Bitmap.createBitmap(MainActivity.editimage.getWidth(), MainActivity.editimage.getHeight(), Bitmap.Config.RGB_565);
+        cropBitmap = createScaledBitmap(cropBitmap, length,  length);
+        Canvas canvas = new Canvas(resultBmp);
+        canvas.drawBitmap(MainActivity.editimage, 0, 0, null);
+        canvas.drawBitmap(cropBitmap, x1, y1, null);
+        editview.setImageDrawable(new BitmapDrawable(getResources(),resultBmp));
+        cropBitmap.recycle();
+    }
+
+    public String uploadPhoto(Bitmap cropBitmap) {
+        File storage = imageEdit.this.getCacheDir(); // 이 부분이 임시파일 저장 경로
+        String fileName = "photo.png";  // 파일이름은 마음대로!
+        File tempFile = new File(storage,fileName);
+
+        try{
+            tempFile.createNewFile();  // 파일을 생성해주고
+            FileOutputStream out = new FileOutputStream(tempFile);
+            cropBitmap.compress(Bitmap.CompressFormat.PNG, 100 , out);  // 넘거 받은 bitmap을 jpeg(손실압축)으로 저장해줌
+            out.close(); // 마무리로 닫아줍니다.
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                .addFormDataPart("file", "photo.png", RequestBody.create(MediaType.parse("image/png"), tempFile))
+                .build();
+
+        String url = "http://118.36.222.157/image_upload_age.php";
+        okhttp3.Request request = new okhttp3.Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build();
+
+        client.newCall(request).enqueue(updateUserInfoCallback);
+
+        String url2 = "http://118.36.222.157/image_upload_emotion.php";
+        okhttp3.Request request2 = new okhttp3.Request.Builder()
+                .url(url2)
+                .post(requestBody)
+                .build();
+
+        client.newCall(request2).enqueue(updateUserInfoCallback2);
+        return null;
+    }
+
+
+    private static Bitmap createScaledBitmap(Bitmap bitmap,int newWidth,int newHeight) {
+        Bitmap scaledBitmap = Bitmap.createBitmap(newWidth, newHeight, bitmap.getConfig());
+
+        float scaleX = newWidth / (float) bitmap.getWidth();
+        float scaleY = newHeight / (float) bitmap.getHeight();
+
+        Matrix scaleMatrix = new Matrix();
+        scaleMatrix.setScale(scaleX, scaleY, 0, 0);
+
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.setMatrix(scaleMatrix);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+        paint.setFilterBitmap(true);
+        canvas.drawBitmap(bitmap, 0, 0, paint);
+
+        return scaledBitmap;
+    }
+
+    private Callback updateUserInfoCallback = new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+            Log.d("TEST", "ERROR Message : " + e.getMessage());
+        }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            final String responseData = response.body().string();
+            decodedByte = BitmapFactory.decodeByteArray(Base64.decode(responseData, 0), 0, Base64.decode(responseData, 0).length);
+            Log.d("TEST", "responseData : " + responseData);
+
+        }
+    };
+
+    private Callback updateUserInfoCallback2 = new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+            Log.d("TEST", "ERROR Message : " + e.getMessage());
+        }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            final String responseData = response.body().string();
+            decodedByte2 = BitmapFactory.decodeByteArray(Base64.decode(responseData, 0), 0, Base64.decode(responseData, 0).length);
+            Log.d("TEST", "responseData : " + responseData);
+
+        }
+    };
 }

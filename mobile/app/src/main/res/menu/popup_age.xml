@@ -4,40 +4,41 @@
     <item
         android:id="@+id/baby"
         android:enabled="true"
-        android:title="유아" />
+        android:title="0~5세" />
     <item
-        android:id="@+id/teen"
+        android:id="@+id/child"
         android:enabled="true"
-        android:title="10대">
-    </item>
+        android:title="6~10세"></item>
+    <item
+        android:id="@+id/early_teen"
+        android:enabled="true"
+        android:title="11~15세"></item>
+    <item
+        android:id="@+id/late_teen"
+        android:enabled="true"
+        android:title="16~20세"></item>
     <item
         android:id="@+id/twenty"
         android:enabled="true"
-        android:title="20대">
-    </item>
+        android:title="21~30세"></item>
     <item
         android:id="@+id/thirty"
         android:enabled="true"
-        android:title="30대">
-    </item>
+        android:title="31~40세"></item>
     <item
         android:id="@+id/fourty"
         android:enabled="true"
-        android:title="40대">
-    </item>
+        android:title="41~50세"></item>
     <item
-    android:id="@+id/fifty"
-    android:enabled="true"
-    android:title="50대">
-</item>
+        android:id="@+id/fifty"
+        android:enabled="true"
+        android:title="51~60세"></item>
     <item
         android:id="@+id/sixty"
         android:enabled="true"
-        android:title="60대">
-    </item>
+        android:title="61~70세"></item>
     <item
         android:id="@+id/over_seventy"
         android:enabled="true"
-        android:title="70대이상">
-    </item>
+        android:title="70세~"></item>
 </menu>
