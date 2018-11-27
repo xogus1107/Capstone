@@ -35,8 +35,8 @@ if(100000 < $size){
                     exec($cmd);
                     $imagedata = file_get_contents($foldername.'\\1-images.jpg');
                     echo base64_encode($imagedata);
-                    #echo "<img src=$foldername.'\\1-images.jpg' alt='result' />\n";
-                    #echo "      original             Anger              Contempt           Disgust               Fear            Happiness             Neutral             Sadness           Surprise\n";
+                    //echo "<img src=$foldername.'\\1-images.jpg' alt='result' />\n";
+                    //echo "      original             Anger              Contempt           Disgust               Fear            Happiness             Neutral             Sadness           Surprise\n";
                     unlink($uploadfile);
                     unlink($foldername.'\\1-images.jpg');
                     rmdir($foldername);
