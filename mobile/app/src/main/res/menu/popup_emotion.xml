@@ -25,4 +25,19 @@
         android:enabled="true"
         android:title="공포">
     </item>
+    <item
+        android:id="@+id/contempt"
+        android:enabled="true"
+        android:title="경멸">
+    </item>
+    <item
+        android:id="@+id/disgust"
+        android:enabled="true"
+        android:title="역겨움">
+    </item>
+    <item
+        android:id="@+id/neutral"
+        android:enabled="true"
+        android:title="무표정">
+    </item>
 </menu>
