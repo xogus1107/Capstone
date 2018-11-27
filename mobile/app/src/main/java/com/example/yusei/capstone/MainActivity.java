@@ -1,5 +1,6 @@
 package com.example.yusei.capstone;
 
+import android.database.Cursor;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.support.v4.content.FileProvider;
@@ -21,11 +22,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     public String photoFileName = "photo.png";
@@ -34,7 +32,6 @@ public class MainActivity extends AppCompatActivity {
     private Button button_gallery;
     private Button button_camera;
     private ImageView imageview;
-    private static final String IMAGE_DIRECTORY = "/capstone";
     private int GALLERY = 1, CAMERA = 2;
     public static Bitmap editimage;
 
@@ -109,8 +106,20 @@ public class MainActivity extends AppCompatActivity {
                 Uri contentURI = data.getData();
                 try {
                     editimage = MediaStore.Images.Media.getBitmap(this.getContentResolver(), contentURI);
-                    saveImage(editimage);
-                    Toast.makeText(MainActivity.this, "Image Saved!", Toast.LENGTH_SHORT).show();
+                    // 갤러리에서 선택한 이미지의 실제 경로 저장
+                    String realpath = getPath(contentURI);
+                    // 갤러리 EXIF 메타데이터 저장
+                    ExifInterface exif = null;
+                    try {
+                        exif = new ExifInterface(realpath);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_UNDEFINED);
+
+                    editimage = rotateBitmap(editimage, orientation);
+
                     // 이미지 편집 액티비티 호출
                     Intent intent1 = new Intent(getApplicationContext(), imageEdit.class);
                     startActivity(intent1);
@@ -135,49 +144,21 @@ public class MainActivity extends AppCompatActivity {
                     ExifInterface.ORIENTATION_UNDEFINED);
 
             editimage = rotateBitmap(editimage, orientation);
-            /*
-            editimage = RotateBitmap(editimage, 270);
-            */
-            saveImage(editimage);
-            Toast.makeText(MainActivity.this, "Image Saved!", Toast.LENGTH_SHORT).show();
+
             // 이미지 편집 액티비티 호출
             Intent intent1 = new Intent(getApplicationContext(), imageEdit.class);
             startActivity(intent1);
         }
     }
 
-    public String saveImage(Bitmap myBitmap) {
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        myBitmap.compress(Bitmap.CompressFormat.PNG, 100, bytes);
-        File wallpaperDirectory = new File(
-                Environment.getExternalStorageDirectory() + IMAGE_DIRECTORY);
-        // have the object build the directory structure, if needed.
-        if (!wallpaperDirectory.exists()) {
-            wallpaperDirectory.mkdirs();
-        }
-        try {
-            File f = new File(wallpaperDirectory, Calendar.getInstance()
-                    .getTimeInMillis() + ".png");
-            f.createNewFile();
-            FileOutputStream fo = new FileOutputStream(f);
-            fo.write(bytes.toByteArray());
-            MediaScannerConnection.scanFile(this,
-                    new String[]{f.getPath()},
-                    new String[]{"image/png"}, null);
-            fo.close();
-            Log.d("TAG", "File Saved::--->" + f.getAbsolutePath());
-
-            return f.getAbsolutePath();
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
-        return "";
-    }
-
-    public static Bitmap RotateBitmap(Bitmap source, float angle) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(angle);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    // 갤러리 사진 실제 경로 호출
+    public String getPath(Uri uri) {
+        String[] projection = {MediaStore.Images.Media.DATA};
+        Cursor cursor = managedQuery(uri, projection, null, null, null);
+        startManagingCursor(cursor);
+        int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(columnIndex);
     }
 
     public static Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
@@ -228,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.back_menu, menu);
+        menu.findItem(R.id.action_save).setVisible(false);
         return true;
     }
 
