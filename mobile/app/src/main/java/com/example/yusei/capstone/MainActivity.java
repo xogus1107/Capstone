@@ -1,15 +1,20 @@
 package com.example.yusei.capstone;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -22,8 +27,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.gun0912.tedpermission.PermissionListener;
+import com.gun0912.tedpermission.TedPermission;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     public String photoFileName = "photo.png";
@@ -46,11 +55,39 @@ public class MainActivity extends AppCompatActivity {
         button_camera = (Button) findViewById(R.id.camera);
         imageview = (ImageView) findViewById(R.id.picture);
 
+        // 앱 기동 시 권한 체크 및 설정
+        PermissionListener permissionlistener = new PermissionListener() {
+            @Override
+            public void onPermissionGranted() {
+            }
+
+            @Override
+            public void onPermissionDenied(List<String> deniedPermissions) {
+            }
+        };
+
+        TedPermission.with(this)
+                .setPermissionListener(permissionlistener)
+                .setDeniedMessage("권한 설정을 하지 않으면 서비스를 이용 하실 수 없습니다.\n\n[설정] > [권한]에 가서 권한을 설정해주세요.")
+                .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA)
+                .check();
+
 
         // 갤러리 버튼 클릭 시
         button_gallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (isNetworkConnected(MainActivity.this) == true) {
+                } else {
+                    Toast.makeText(MainActivity.this, "인터넷 연결을 확인해 주세요", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // 권한 체크
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                } else {
+                    Toast.makeText(MainActivity.this, "저장소 접근 권한을 설정해 주세요", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 choosePhotoFromGallary();
             }
         });
@@ -59,6 +96,18 @@ public class MainActivity extends AppCompatActivity {
         button_camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // 인터넷 연결 체크
+                if (isNetworkConnected(MainActivity.this) == true) {
+                } else {
+                    Toast.makeText(MainActivity.this, "인터넷 연결을 확인해 주세요", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // 권한 체크
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                } else {
+                    Toast.makeText(MainActivity.this, "카메라 사용 권한을 설정해 주세요", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 takePhotoFromCamera();
             }
         });
@@ -161,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
         return cursor.getString(columnIndex);
     }
 
+    // 이미지의 EXIF 정보 받아 회전 구현
     public static Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
         Matrix matrix = new Matrix();
         switch (orientation) {
@@ -197,8 +247,7 @@ public class MainActivity extends AppCompatActivity {
             Bitmap bmRotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
             bitmap.recycle();
             return bmRotated;
-        }
-        catch (OutOfMemoryError e) {
+        } catch (OutOfMemoryError e) {
             e.printStackTrace();
             return null;
         }
@@ -213,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    // 툴바에 버튼 이벤트 구현
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -226,5 +276,17 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // 네트워크 연결 상태 체크
+    public static boolean isNetworkConnected(Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo mobile = manager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        NetworkInfo wifi = manager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        if (mobile.isConnected() || wifi.isConnected())
+            return true;
+        else
+            return false;
     }
 }
