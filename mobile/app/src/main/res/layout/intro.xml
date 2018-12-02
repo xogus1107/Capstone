@@ -16,5 +16,16 @@
         android:scaleType="fitCenter"
         android:src="@drawable/sanaicon" />
 
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="68dp"
+        android:layout_below="@+id/picture"
+        android:layout_centerHorizontal="true"
+        android:gravity="center_vertical"
+        android:text="너의 얼굴이 보여"
+        android:textColor="@android:color/white"
+        android:textSize="30sp" />
+
 </RelativeLayout>
 

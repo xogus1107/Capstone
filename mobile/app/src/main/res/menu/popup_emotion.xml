@@ -28,8 +28,7 @@
     <item
         android:id="@+id/contempt"
         android:enabled="true"
-        android:title="경멸">
-    </item>
+        android:title="썩소"></item>
     <item
         android:id="@+id/disgust"
         android:enabled="true"
